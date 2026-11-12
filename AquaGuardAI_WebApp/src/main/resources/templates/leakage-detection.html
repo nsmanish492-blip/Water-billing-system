@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/main :: layout('Leakage Detection Engine', 'Rule-Based Hydraulic Anomaly Evaluation', ~{::content}, ~{::scripts})}">
+<body>
+
+<div th:fragment="content">
+    <!-- Architectural Notice: Physical Sensor Arrangement -->
+    <div class="card-guard mb-4 border-info">
+        <div class="card-guard-header bg-info bg-opacity-10">
+            <span class="card-guard-title text-cyan"><i class="bi bi-info-circle-fill"></i> Principle of Hydraulic Differential Analysis</span>
+            <span class="badge bg-secondary font-mono">SERIES TOPOLOGY REQUIRED</span>
+        </div>
+        <div class="card-guard-body">
+            <p class="small text-light mb-2">
+                <strong>Crucial Engineering Concept:</strong> Comparing two flow sensor readings can only indicate possible pipe leakage if the sensors are positioned in a <strong>series arrangement</strong> along the same fluid conduit (i.e., <span class="text-cyan">Inlet Meter ➔ Pipe Section Under Test ➔ Outlet Meter</span>).
+            </p>
+            <p class="small text-muted mb-0">
+                If sensors are installed on separate parallel branches or distinct plumbing fixtures, their numerical difference reflects divergent fixture consumption, <em>never</em> a leak. This system strictly labels findings as <strong class="text-warning">"Possible abnormal flow — inspect the pipe"</strong> rather than an unverified "confirmed leak".
+            </p>
+        </div>
+    </div>
+
+    <!-- Live Evaluation State Card -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-8">
+            <div class="card-guard h-100">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-cpu-fill text-warning"></i> Real-Time Rule Engine Verdict</span>
+                    <span class="badge" th:classappend="'bg-' + ${leakage.statusBadgeClass}" th:text="${leakage.statusLabel}">NORMAL FLOW</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-4">
+                            <span class="small text-muted">Inlet Flow (Sensor 1):</span>
+                            <div class="fs-4 fw-bold font-mono text-info"><span id="live-s1-flow" th:text="${readings.size() >= 2 ? readings[0].flowRateLpm : 'Unavailable'}">Unavailable</span><span th:if="${readings.size() >= 2}"> L/min</span></div>
+                        </div>
+                        <div class="col-sm-4">
+                            <span class="small text-muted">Outlet Flow (Sensor 2):</span>
+                            <div class="fs-4 fw-bold font-mono text-cyan"><span id="live-s2-flow" th:text="${readings.size() >= 2 ? readings[1].flowRateLpm : 'Unavailable'}">Unavailable</span><span th:if="${readings.size() >= 2}"> L/min</span></div>
+                        </div>
+                        <div class="col-sm-4">
+                            <span class="small text-muted">Differential (Δ Flow):</span>
+                            <div class="fs-4 fw-bold font-mono text-warning"><span id="live-diff-flow" th:text="${#numbers.formatDecimal(leakage.differentialFlowLpm, 1, 2)}">0.07</span> L/min</div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 rounded bg-dark border border-secondary mb-3">
+                        <div class="small fw-bold text-muted mb-1 text-uppercase">Diagnostic Explanation:</div>
+                        <p class="text-light mb-0 small" th:text="${leakage.explanation}">
+                            Inlet and Outlet flow rates match within the acceptable tolerance margin.
+                        </p>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between small text-muted">
+                        <span>Persistence Observed: <strong class="text-light" th:text="${leakage.persistenceSeconds + 's'}">0s</strong> / Required: <strong class="text-light" th:text="${leakage.requiredPersistenceSeconds + 's'}">5s</strong></span>
+                        <span>Confidence: <span class="badge bg-secondary font-mono" th:text="${leakage.confidenceLevel}">High</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Warning Level Legend Card -->
+        <div class="col-lg-4">
+            <div class="card-guard h-100">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-palette-fill text-primary"></i> Decision Hierarchy</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="mb-3 p-2 rounded bg-success bg-opacity-10 border border-success border-opacity-25">
+                        <div class="fw-bold text-success small"><i class="bi bi-check-circle-fill me-1"></i> Green — Balanced Flow</div>
+                        <div class="small text-muted">|S1 - S2| &le; Configured threshold (default 0.40 L/min). Flow balanced.</div>
+                    </div>
+
+                    <div class="mb-3 p-2 rounded bg-warning bg-opacity-10 border border-warning border-opacity-25">
+                        <div class="fw-bold text-warning small"><i class="bi bi-exclamation-triangle-fill me-1"></i> Yellow — Transient / Inversion</div>
+                        <div class="small text-muted">Δ exceeds threshold but persistence &lt; 5s, or S2 &gt; S1 indicating reverse sensor installation.</div>
+                    </div>
+
+                    <div class="mb-3 p-2 rounded bg-danger bg-opacity-10 border border-danger border-opacity-25">
+                        <div class="fw-bold text-danger small"><i class="bi bi-x-octagon-fill me-1"></i> Red — Possible Abnormal Flow</div>
+                        <div class="small text-muted">Inlet &gt; Outlet by &gt; threshold persistently for &ge; 5s. Physical inspection recommended.</div>
+                    </div>
+
+                    <div class="p-2 rounded bg-secondary bg-opacity-10 border border-secondary border-opacity-25">
+                        <div class="fw-bold text-light small"><i class="bi bi-slash-circle me-1"></i> Grey — Insufficient Data</div>
+                        <div class="small text-muted">Raised when one or both sensors report zero pulse interrupts or disconnected pins.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Threshold Parameter Tuning Form -->
+    <div class="row g-3">
+        <div class="col-12">
+            <div class="card-guard">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-sliders text-info"></i> Detection Rule Calibration Parameters</span>
+                    <a th:href="@{/settings}" class="btn-guard-outline btn-sm text-decoration-none">Advanced Settings</a>
+                </div>
+                <div class="card-guard-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-guard-label">Alarm Threshold (L/min)</label>
+                            <input type="text" class="form-control form-guard-control font-mono" th:value="${settings.leakThresholdLpm}" readonly>
+                            <small class="text-muted">Minimum difference to trigger warning.</small>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-guard-label">Persistence Filter (Seconds)</label>
+                            <input type="text" class="form-control form-guard-control font-mono" th:value="${settings.persistenceDurationSec + ' seconds'}" readonly>
+                            <small class="text-muted">Filters out faucet turn-on pressure waves.</small>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-guard-label">Topology Configuration</label>
+                            <input type="text" class="form-control form-guard-control font-mono text-cyan" th:value="${settings.topologyMode}" readonly>
+                            <small class="text-muted">Currently active physical model.</small>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-guard-label">Interactive Simulation</label>
+                            <div>
+                                <button id="btnToggleLeakSim" class="btn btn-warning w-100 font-mono">
+                                    <span th:text="${isSimulatingLeak} ? 'Restore Balanced Flow' : 'Trigger Leak Event'">Trigger Leak Event</span>
+                                </button>
+                            </div>
+                            <small class="text-muted">Toggles flow delta for demonstration.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:fragment="scripts"></div>
+</body>
+</html>

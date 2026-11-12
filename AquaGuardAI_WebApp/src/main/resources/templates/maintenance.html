@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/main :: layout('Maintenance & Inspection Log', 'Hardware Calibration Records & Water Conservation Best Practices', ~{::content}, ~{::scripts})}">
+<body>
+
+<div th:fragment="content">
+    <!-- Log Form & Guidance Row -->
+    <div class="row g-3 mb-4">
+        <!-- New Maintenance Entry Form -->
+        <div class="col-lg-5">
+            <div class="card-guard h-100">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-journal-plus text-cyan"></i> Log Maintenance Action</span>
+                </div>
+                <div class="card-guard-body">
+                    <form th:action="@{/maintenance/add}" th:object="${newRecord}" method="post">
+                        <div class="mb-3">
+                            <label class="form-guard-label" for="componentInput">Component / Sensor</label>
+                            <input type="text" id="componentInput" th:field="*{component}" class="form-control form-guard-control" placeholder="e.g. Flow Meter YF-S201 (GPIO 27)" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-guard-label" for="actionInput">Action Taken</label>
+                            <input type="text" id="actionInput" th:field="*{actionTaken}" class="form-control form-guard-control" placeholder="e.g. Rotor cleaning & pulse recalibration" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-guard-label" for="techInput">Technician / Student</label>
+                            <input type="text" id="techInput" th:field="*{technician}" class="form-control form-guard-control" placeholder="e.g. IoT Project Team" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-guard-label" for="notesInput">Technical Notes</label>
+                            <textarea id="notesInput" th:field="*{notes}" class="form-control form-guard-control" rows="3" placeholder="Enter findings, pulse count observed, or fitting pressure check..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-guard-primary w-100">Save Maintenance Log Entry</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Water Conservation Suggestions -->
+        <div class="col-lg-7">
+            <div class="card-guard h-100">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-lightbulb-fill text-warning"></i> Inspection Guidelines & Water Conservation Advice</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="mb-3 p-3 rounded bg-dark border border-secondary">
+                        <h6 class="text-info mb-1"><i class="bi bi-tools me-1"></i> Sensor Physical Inspection Protocol:</h6>
+                        <ul class="small text-muted mb-0 ps-3">
+                            <li>Check for mechanical debris or mineral scaling inside the turbine housing.</li>
+                            <li>Ensure common ground connection between ESP32 and sensor 5V power supply.</li>
+                            <li>Confirm flow direction arrow stamped onto the YF-S201 brass/plastic body.</li>
+                        </ul>
+                    </div>
+
+                    <div class="p-3 rounded bg-dark border border-secondary">
+                        <h6 class="text-success mb-1"><i class="bi bi-droplet me-1"></i> Conservation Best Practices:</h6>
+                        <ul class="small text-muted mb-0 ps-3">
+                            <li>Install aerators on primary outlet taps to reduce consumption from 12 L/min to 6 L/min.</li>
+                            <li>Audit underground pipe joints every 6 months to curb unseen sub-surface soil seepage.</li>
+                            <li>Monitor baseline 03:00 AM flow to detect silent toilet flapper leaks.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historical Log Table -->
+    <div class="row g-3">
+        <div class="col-12">
+            <div class="card-guard">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-clock-history text-secondary"></i> Equipment Maintenance History</span>
+                    <span class="badge bg-secondary font-mono">Verified Logs</span>
+                </div>
+                <div class="card-guard-body p-0">
+                    <div class="table-responsive">
+                        <table class="table-guard">
+                            <thead>
+                            <tr>
+                                <th>Log ID</th>
+                                <th>Service Date</th>
+                                <th>Component</th>
+                                <th>Action Taken</th>
+                                <th>Serviced By</th>
+                                <th>Notes</th>
+                                <th>Status</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="m : ${maintenanceList}">
+                                <td class="font-mono text-cyan" th:text="${m.id}">MNT-01</td>
+                                <td class="font-mono small text-muted" th:text="${m.date}">2026-09-15</td>
+                                <td class="fw-semibold text-light" th:text="${m.component}">Inlet Flow Sensor</td>
+                                <td class="text-light" th:text="${m.actionTaken}">Pulse calibration</td>
+                                <td class="small text-muted" th:text="${m.technician}">Demo Team</td>
+                                <td class="small text-muted" th:text="${m.notes}">450 pulses/L verified</td>
+                                <td><span class="badge bg-success" th:text="${m.status}">Completed</span></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:fragment="scripts"></div>
+</body>
+</html>

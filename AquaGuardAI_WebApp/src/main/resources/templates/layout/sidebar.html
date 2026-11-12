@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="sidebar" class="app-sidebar">
+    <!-- Brand Header -->
+    <div class="sidebar-brand">
+        <div class="brand-icon-box">
+            <span>💧</span>
+        </div>
+        <div>
+            <div class="brand-title">AquaGuard <span>AI</span></div>
+            <div class="brand-tagline">Smart Water Monitor</div>
+        </div>
+    </div>
+
+    <!-- Navigation List (All 12 Required Pages) -->
+    <nav class="sidebar-nav">
+        <div class="nav-section-title">Telemetry & Core</div>
+
+        <a th:href="@{/dashboard}" class="nav-item-link" th:classappend="${activePage == 'dashboard'} ? 'active'">
+            <i class="bi bi-speedometer2"></i>
+            <span>Dashboard</span>
+        </a>
+
+        <a th:href="@{/live-monitoring}" class="nav-item-link" th:classappend="${activePage == 'live-monitoring'} ? 'active'">
+            <i class="bi bi-activity"></i>
+            <span>Live Monitoring</span>
+        </a>
+
+        <div class="nav-section-title">Hydraulic & Leakage</div>
+
+        <a th:href="@{/leakage-detection}" class="nav-item-link" th:classappend="${activePage == 'leakage-detection'} ? 'active'">
+            <i class="bi bi-shield-exclamation"></i>
+            <span>Leakage Detection</span>
+        </a>
+
+        <a th:href="@{/future-risk}" class="nav-item-link" th:classappend="${activePage == 'future-risk'} ? 'active'">
+            <i class="bi bi-graph-up-arrow"></i>
+            <span>Future Leakage Risk</span>
+        </a>
+
+        <a th:href="@{/water-loss}" class="nav-item-link" th:classappend="${activePage == 'water-loss'} ? 'active'">
+            <i class="bi bi-droplet-half"></i>
+            <span>Water Loss Analysis</span>
+        </a>
+
+        <a th:href="@{/pipe-health}" class="nav-item-link" th:classappend="${activePage == 'pipe-health'} ? 'active'">
+            <i class="bi bi-heart-pulse"></i>
+            <span>Pipe Health</span>
+        </a>
+
+        <div class="nav-section-title">Analytics & Billing</div>
+
+        <a th:href="@{/billing}" class="nav-item-link" th:classappend="${activePage == 'billing'} ? 'active'">
+            <i class="bi bi-cash-coin"></i>
+            <span>Smart Billing</span>
+        </a>
+
+        <a th:href="@{/analytics}" class="nav-item-link" th:classappend="${activePage == 'analytics'} ? 'active'">
+            <i class="bi bi-bar-chart-line"></i>
+            <span>Usage Analytics</span>
+        </a>
+
+        <div class="nav-section-title">Management & System</div>
+
+        <a th:href="@{/alerts}" class="nav-item-link" th:classappend="${activePage == 'alerts'} ? 'active'">
+            <i class="bi bi-bell"></i>
+            <span>Alerts & Events</span>
+            <span class="badge bg-danger ms-auto rounded-pill" th:if="${systemStatus != null && systemStatus.activeAlertCount > 0}" th:text="${systemStatus.activeAlertCount}">2</span>
+        </a>
+
+        <a th:href="@{/maintenance}" class="nav-item-link" th:classappend="${activePage == 'maintenance'} ? 'active'">
+            <i class="bi bi-tools"></i>
+            <span>Maintenance Logs</span>
+        </a>
+
+        <a th:href="@{/settings}" class="nav-item-link" th:classappend="${activePage == 'settings'} ? 'active'">
+            <i class="bi bi-sliders"></i>
+            <span>Settings</span>
+        </a>
+
+        <a th:href="@{/diagnostics}" class="nav-item-link" th:classappend="${activePage == 'diagnostics'} ? 'active'">
+            <i class="bi bi-cpu"></i>
+            <span>System Diagnostics</span>
+        </a>
+    </nav>
+
+    <!-- Sidebar Footer -->
+    <div class="sidebar-footer">
+        <div class="d-flex align-items-center justify-content-between mb-1">
+            <span class="small text-muted">Hardware State:</span>
+            <span class="badge bg-secondary font-mono" style="font-size: 0.7rem;">OFFLINE</span>
+        </div>
+        <div class="small text-dim" style="font-size: 0.72rem;">
+            Node: ESP32 (GPIO 27/26)
+        </div>
+    </div>
+</div>
+</body>
+</html>

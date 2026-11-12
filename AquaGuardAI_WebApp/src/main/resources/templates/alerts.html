@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/main :: layout('Alerts & Event Management', 'Incident Notifications, Threshold Breaches, and Operator Acknowledgments', ~{::content}, ~{::scripts})}">
+<body>
+
+<div th:fragment="content">
+    <!-- Alerts Overview -->
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="card-guard">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-bell-fill text-warning"></i> Incident Notification Center</span>
+                    <span class="badge bg-secondary font-mono">Firebase alert records</span>
+                </div>
+                <div class="card-guard-body p-0">
+                    <div class="table-responsive">
+                        <table class="table-guard">
+                            <thead>
+                            <tr>
+                                <th>Severity</th>
+                                <th>Alert ID</th>
+                                <th>Incident Details</th>
+                                <th>Category</th>
+                                <th>Detected At</th>
+                                <th>Recommended Action</th>
+                                <th>State</th>
+                                <th>Operator Action</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="alert : ${alerts}">
+                                <td>
+                                    <span class="badge"
+                                          th:classappend="${alert.severity.name() == 'DANGER'} ? 'bg-danger' : (${alert.severity.name() == 'WARNING'} ? 'bg-warning' : 'bg-info')"
+                                          th:text="${alert.severity}">WARNING</span>
+                                </td>
+                                <td class="font-mono text-muted" th:text="${alert.id}">ALT-101</td>
+                                <td>
+                                    <strong class="text-light" th:text="${alert.title}">Differential Flow Anomaly</strong>
+                                    <div class="small text-muted" th:text="${alert.description}">Sensor 1 detected 4.8 L/min...</div>
+                                </td>
+                                <td><span class="badge bg-dark border border-secondary" th:text="${alert.category}">LEAKAGE</span></td>
+                                <td class="font-mono small text-muted" th:text="${alert.timestamp}">Today, 09:15 AM</td>
+                                <td class="small text-cyan" th:text="${alert.recommendedAction}">Inspect pipe segment 1A...</td>
+                                <td>
+                                    <span th:if="${alert.acknowledged}" class="badge bg-success-subtle text-success border border-success-subtle">
+                                        <i class="bi bi-check2"></i> Acknowledged
+                                    </span>
+                                    <span th:unless="${alert.acknowledged}" class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                                        <i class="bi bi-hourglass-split"></i> Active
+                                    </span>
+                                </td>
+                                <td>
+                                    <form th:if="${!alert.acknowledged}" th:action="@{'/alerts/' + ${alert.id} + '/acknowledge'}" method="post">
+                                        <button type="submit" class="btn btn-sm btn-outline-info">
+                                            <i class="bi bi-check-lg"></i> Acknowledge
+                                        </button>
+                                    </form>
+                                    <span th:if="${alert.acknowledged}" class="text-muted small">Resolved</span>
+                                </td>
+                            </tr>
+                            <tr th:if="${alerts.isEmpty()}"><td colspan="8" class="text-center text-muted">No alert records are available.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:fragment="scripts"></div>
+</body>
+</html>

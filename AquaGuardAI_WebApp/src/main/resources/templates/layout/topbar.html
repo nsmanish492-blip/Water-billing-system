@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<header th:fragment="topbar(title, subtitle)" class="app-topbar">
+    <div class="topbar-left">
+        <div>
+            <h1 class="page-title" th:text="${title}">Dashboard</h1>
+            <p class="page-subtitle" th:text="${subtitle}">Real-Time Telemetry & Pipe Analytics</p>
+        </div>
+    </div>
+
+    <div class="topbar-right">
+        <!-- Interactive presentation toggle for College Review -->
+        <button id="btnToggleLeakSim" class="btn btn-sm btn-outline-warning d-none d-md-flex align-items-center gap-1"
+                title="Toggle simulated leak to demonstrate anomaly detection to faculty">
+            <i class="bi bi-exclamation-triangle"></i>
+            <span th:text="${isSimulatingLeak} ? 'Stop Leak Simulation' : 'Simulate Leak Event'">Simulate Leak Event</span>
+        </button>
+
+        <!-- Hardware Status Badge -->
+        <div id="hardware-status-badge" class="badge bg-danger"
+             th:class="${systemStatus.hardwareConnected ? 'badge bg-success' : 'badge bg-danger'}">
+            <span id="hardware-status-dot" th:class="${systemStatus.hardwareConnected ? 'status-dot green' : 'status-dot red'}"></span>
+            <span id="hardware-status-text" th:text="${systemStatus.hardwareConnected ? 'HARDWARE CONNECTED' : 'HARDWARE NOT CONNECTED'}">HARDWARE NOT CONNECTED</span>
+        </div>
+
+        <div id="demo-mode-badge" class="badge-demo" th:classappend="${systemStatus.demoMode} ? '' : ' d-none'">
+            <span class="status-dot amber"></span>
+            <span th:text="${systemStatus.demoMode ? 'NO LIVE DATA' : 'LIVE HARDWARE'}">NO LIVE DATA</span>
+        </div>
+
+        <!-- Sync Indicator -->
+        <div class="text-muted small d-none d-lg-block font-mono" style="font-size: 0.78rem;">
+            Sync: <span id="last-sync-time" th:text="${systemStatus != null ? systemStatus.lastUpdateTimestamp : 'Active'}">09:30 AM</span>
+        </div>
+    </div>
+</header>
+</body>
+</html>

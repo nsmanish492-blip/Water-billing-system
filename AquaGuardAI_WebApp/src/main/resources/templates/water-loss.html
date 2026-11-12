@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/main :: layout('Water Loss & Non-Revenue Water (NRW)', 'Auditing Unaccounted Water Discrepancies & Fiscal Impact', ~{::content}, ~{::scripts})}">
+<body>
+
+<div th:fragment="content">
+    <!-- Explanatory Disclaimer Banner -->
+    <div class="card-guard mb-4 border-warning">
+        <div class="card-guard-header bg-warning bg-opacity-10">
+            <span class="card-guard-title text-warning"><i class="bi bi-exclamation-triangle-fill"></i> Non-Revenue Water Audit Disclaimer</span>
+            <span class="badge bg-dark border border-warning text-warning font-mono">ESTIMATED METRICS</span>
+        </div>
+        <div class="card-guard-body">
+            <p class="small text-light mb-1">
+                <strong>Methodology Explanation:</strong> Values are estimated from inlet/outlet cumulative-volume differences over the same stored Firebase history window.
+            </p>
+            <p class="small text-muted mb-0">
+                A meter difference is not a confirmed leak and cannot identify its location. Calibration, matched sensor intervals, and pressure measurements are not verified here.
+            </p>
+        </div>
+    </div>
+
+    <!-- Loss Summary Metrics -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card-guard h-100">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-droplet-half text-danger"></i> Cumulative Unaccounted Volume</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="d-flex align-items-baseline mb-2">
+                        <span class="metric-number text-danger" th:text="${waterLossList.isEmpty() ? 'N/A' : totalEstimatedLossLitres}">N/A</span>
+                        <span class="metric-unit">Litres</span>
+                    </div>
+                    <div class="small text-muted" th:text="${waterLossList.isEmpty() ? 'Insufficient telemetry history.' : 'Aggregate of available Firebase history.'}">Insufficient telemetry history.</div>
+                    <div class="small text-muted" th:if="${estimatedLossPercentage != null}" th:text="${'Estimated loss: ' + #numbers.formatDecimal(estimatedLossPercentage, 1, 2) + '%'}">Estimated loss</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card-guard h-100">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-cash text-warning"></i> Estimated Fiscal Impact</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="d-flex align-items-baseline mb-2">
+                        <span class="metric-currency">₹</span>
+                        <span class="metric-number text-warning" th:text="${waterLossList.isEmpty() ? 'N/A' : totalEstimatedFinancialLoss}">N/A</span>
+                    </div>
+                    <div class="small text-muted">Calculated at active tariff rate ₹<span th:text="${settings.waterTariffPerKiloLitre}">15.0</span>/kL.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card-guard h-100">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-speedometer2 text-info"></i> Mean Leakage Rate (Active Event)</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="d-flex align-items-baseline mb-2">
+                        <span class="metric-number text-info" th:text="${meanEstimatedLossRate == null ? 'N/A' : meanEstimatedLossRate}">N/A</span>
+                        <span class="metric-unit">L/min</span>
+                    </div>
+                    <div class="small text-muted">Equivalent to approx. 48.0 Litres per hour.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Water Loss Incident Registry -->
+    <div class="row g-3">
+        <div class="col-12">
+            <div class="card-guard">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-journal-text text-cyan"></i> Suspected Water Loss Incident Records</span>
+                    <span class="badge bg-secondary font-mono" th:text="${waterLossList.isEmpty() ? 'No measured discrepancy' : 'Firebase-derived estimate'}">No measured discrepancy</span>
+                </div>
+                <div class="card-guard-body p-0">
+                    <div class="table-responsive">
+                        <table class="table-guard">
+                            <thead>
+                            <tr>
+                                <th>Incident ID</th>
+                                <th>Event Title & Pipe Section</th>
+                                <th>Detected At</th>
+                                <th>Duration</th>
+                                <th>In / Out / Loss Volume</th>
+                                <th>Loss %</th>
+                                <th>Loss Rate</th>
+                                <th>Assumed Tariff</th>
+                                <th>Financial Loss</th>
+                                <th>Confidence & Limitations</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="loss : ${waterLossList}">
+                                <td class="font-mono text-cyan" th:text="${loss.eventId}">EVT-001</td>
+                                <td>
+                                    <strong class="text-light" th:text="${loss.title}">Joint Seepage Event</strong>
+                                    <div class="small text-muted" th:text="${loss.pipeSection}">Underground PVC segment</div>
+                                </td>
+                                <td class="font-mono text-muted small" th:text="${loss.detectedAt}">Yesterday, 02:15 AM</td>
+                                <td class="font-mono text-light" th:text="${loss.durationHours + ' hrs'}">3.5 hrs</td>
+                                <td class="font-mono text-danger fw-bold" th:text="${loss.inletVolumeLitres + ' / ' + loss.outletVolumeLitres + ' / ' + loss.estimatedLossLitres + ' L'}">Unavailable</td>
+                                <td class="font-mono text-warning" th:text="${loss.lossPercentage + '%'}">0%</td>
+                                <td class="font-mono text-warning" th:text="${loss.lossRateLpm + ' L/min'}">0.80 L/min</td>
+                                <td class="font-mono text-muted">₹<span th:text="${loss.assumedTariff}">15.0</span>/kL</td>
+                                <td class="font-mono text-danger fw-bold">₹<span th:text="${loss.financialLossInr}">2.52</span></td>
+                                <td class="small text-muted">
+                                    <span class="badge bg-dark border border-secondary text-warning" th:text="${loss.confidenceLabel}">Demo Estimate</span>
+                                    <div class="mt-1" th:text="${loss.limitations}">Calculated using simulated differential...</div>
+                                </td>
+                            </tr>
+                            <tr th:if="${waterLossList.isEmpty()}">
+                                <td colspan="10" class="text-center text-muted">Insufficient telemetry history to estimate water loss.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:fragment="scripts"></div>
+</body>
+</html>

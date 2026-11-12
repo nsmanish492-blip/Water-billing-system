@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/main :: layout('Predictive Pipe Risk Analysis', 'Rule-Based Heuristic Infrastructure Risk Assessment', ~{::content}, ~{::scripts})}">
+<body>
+
+<div th:fragment="content">
+    <!-- Academic Integrity Disclaimer -->
+    <div class="card-guard mb-4 border-warning">
+        <div class="card-guard-header bg-warning bg-opacity-10">
+            <span class="card-guard-title text-warning"><i class="bi bi-shield-lock-fill"></i> Algorithmic Transparency & Model Grounding</span>
+            <span class="badge bg-dark border border-warning text-warning font-mono">RULE-BASED HEURISTIC</span>
+        </div>
+        <div class="card-guard-body">
+            <p class="small text-light mb-1">
+                <strong>Notice:</strong> This transparent rule-based score uses stored flow-difference history only; pipe age and pressure data are not available.
+            </p>
+            <p class="small text-muted mb-0">
+                This version does <em>not</em> claim a pre-trained deep neural network or the capability to predict an exact physical pipe burst date. Scientific pipe health requires extensive stress, acoustic, and pressure sensor datasets, which represent a future project enhancement.
+            </p>
+        </div>
+    </div>
+
+    <!-- Future Risk Indicator Hero -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-5">
+            <div class="card-guard h-100 text-center p-4">
+                <div class="mb-3">
+                    <span class="badge px-3 py-2 fs-6 font-mono"
+                                                    th:classappend="${futureRisk.riskLevel.name() == 'LOW'} ? 'bg-success' : (${futureRisk.riskLevel.name() == 'MEDIUM'} ? 'bg-warning' : (${futureRisk.riskLevel.name() == 'HIGH'} ? 'bg-danger' : 'bg-secondary'))"
+                                                    th:text="${futureRisk.riskLevel.name() == 'INSUFFICIENT_DATA' ? 'INSUFFICIENT DATA' : 'MEASURED HISTORY RISK: ' + futureRisk.riskLevel}">
+                                                INSUFFICIENT DATA
+                    </span>
+                </div>
+
+                <div class="display-3 fw-bold font-mono text-light mb-2" th:text="${futureRisk.riskScore + ' / 100'}">
+                    15 / 100
+                </div>
+                <div class="text-muted small mb-4">Cumulative Heuristic Risk Score</div>
+
+                <div class="progress bg-dark mb-4" style="height: 12px;">
+                    <div class="progress-bar"
+                         th:classappend="${futureRisk.riskLevel.name() == 'LOW'} ? 'bg-success' : (${futureRisk.riskLevel.name() == 'MEDIUM'} ? 'bg-warning' : (${futureRisk.riskLevel.name() == 'HIGH'} ? 'bg-danger' : 'bg-secondary'))"
+                         th:style="'width: ' + ${futureRisk.riskScore} + '%;'"
+                         role="progressbar"></div>
+                </div>
+
+                <div class="d-flex justify-content-between small text-muted font-mono">
+                    <span>0: Stable</span>
+                    <span>50: Moderate Concern</span>
+                    <span>100: Critical</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card-guard h-100">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-clipboard-pulse text-info"></i> Evaluation Parameters & Recommendations</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="mb-3 pb-3 border-bottom border-secondary border-opacity-25">
+                        <div class="small text-muted text-uppercase fw-bold">Primary Risk Factor</div>
+                        <div class="text-light fw-semibold" th:text="${futureRisk.primaryReason}">
+                            Differential readings remain strictly within calibrated tolerance margin.
+                        </div>
+                    </div>
+
+                    <div class="mb-3 pb-3 border-bottom border-secondary border-opacity-25">
+                        <div class="small text-muted text-uppercase fw-bold">Telemetry History Summary</div>
+                        <div class="text-light" th:text="${futureRisk.historicalSummary}">
+                            Sample history indicates 2 flow discrepancy events over the past 30 days.
+                        </div>
+                    </div>
+
+                    <div class="mb-3 pb-3 border-bottom border-secondary border-opacity-25">
+                        <div class="small text-muted text-uppercase fw-bold">Recommended Preventive Action</div>
+                        <div class="text-cyan" th:text="${futureRisk.suggestedAction}">
+                            Routine inspection scheduled in 30 days. No immediate intervention needed.
+                        </div>
+                    </div>
+
+                    <div class="row g-2 text-muted small font-mono">
+                        <div class="col-sm-6">
+                            <span>Analysis Timestamp: </span>
+                            <span class="text-light" th:text="${futureRisk.analysisTimestamp}">12 Oct 2026, 09:30 AM</span>
+                        </div>
+                        <div class="col-sm-6">
+                            <span>Data Sufficiency: </span>
+                            <span class="badge bg-secondary font-mono" th:text="${futureRisk.dataSufficiency}">Sufficient baseline</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pipe Segments Breakdown -->
+    <div class="row g-3">
+        <div class="col-12">
+            <div class="card-guard">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-diagram-3 text-cyan"></i> Segment-by-Segment Risk Registry</span>
+                </div>
+                <div class="card-guard-body p-0">
+                    <div class="table-responsive">
+                        <table class="table-guard">
+                            <thead>
+                            <tr>
+                                <th>Segment ID</th>
+                                <th>Pipe Description</th>
+                                <th>Condition</th>
+                                <th>Abnormal Readings (30d)</th>
+                                <th>Warning Events</th>
+                                <th>Inspection Recommendation</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="pipe : ${pipeHealthList}">
+                                <td class="font-mono text-cyan" th:text="${pipe.pipeSegmentId}">SEG-A1</td>
+                                <td class="fw-semibold text-light" th:text="${pipe.segmentName}">Primary Supply Main</td>
+                                <td>
+                                    <span class="badge" th:classappend="'bg-' + ${pipe.statusBadgeClass}" th:text="${pipe.qualitativeStatus}">Stable / Normal</span>
+                                </td>
+                                <td class="font-mono text-center" th:text="${pipe.recentAbnormalReadingCount}">1</td>
+                                <td class="font-mono text-center" th:text="${pipe.warningCountLast30Days}">2</td>
+                                <td class="small text-muted" th:text="${pipe.inspectionRecommendation}">Routine visual check.</td>
+                            </tr>
+                            <tr th:if="${pipeHealthList.isEmpty()}"><td colspan="6" class="text-center text-muted">Insufficient telemetry history.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:fragment="scripts"></div>
+</body>
+</html>

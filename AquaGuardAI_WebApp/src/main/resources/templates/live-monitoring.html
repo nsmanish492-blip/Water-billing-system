@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/main :: layout('Live Sensor Telemetry', 'Dual Flow Sensor Real-Time Monitoring', ~{::content}, ~{::scripts})}">
+<body>
+
+<div th:fragment="content" id="live-monitoring-page" th:attr="data-demo-mode=${systemStatus.demoMode}">
+    <!-- Notice Bar -->
+    <div class="alert alert-dark border border-secondary d-flex align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center gap-2">
+            <span id="live-data-mode" class="badge bg-warning text-dark font-mono"
+                th:class="${systemStatus.hardwareConnected ? 'badge bg-success-subtle text-success font-mono' : 'badge bg-warning text-dark font-mono'}"
+                th:text="${systemStatus.hardwareConnected ? 'LIVE HARDWARE' : 'NO LIVE DATA'}">NO LIVE DATA</span>
+            <span id="live-data-message" class="text-light" th:text="${systemStatus.diagnosticMessage}">No live telemetry is available.</span>
+        </div>
+        <span class="small text-muted font-mono">Pins: GPIO 27 (Inlet) & GPIO 26 (Outlet)</span>
+    </div>
+
+    <!-- Dual Sensor Cards Row -->
+    <div class="row g-3 mb-4">
+        <!-- Sensor 1 (Inlet) Card -->
+        <div class="col-lg-6">
+            <div class="card-guard h-100 border-primary">
+                <div class="card-guard-header bg-primary bg-opacity-10">
+                    <div>
+                        <span class="card-guard-title text-info"><i class="bi bi-box-arrow-in-right"></i> SENSOR 1: INLET FLOW METER</span>
+                        <div class="small text-muted">Model: YF-S201 | Target Signal Pin: ESP32 GPIO 27</div>
+                    </div>
+                      <span data-sensor-valid="inlet" class="badge bg-success-subtle text-success border border-success-subtle"
+                          th:text="${readings.size() >= 2 ? (readings[0].valid ? 'FIRMWARE REPORTED VALID' : 'VALIDITY UNREPORTED/INVALID') : 'UNAVAILABLE'}">UNAVAILABLE</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="d-flex align-items-baseline mb-3">
+                        <span class="metric-number text-info" id="live-s1-flow" th:text="${readings.size() >= 2 ? readings[0].flowRateLpm : 'Unavailable'}">Unavailable</span>
+                        <span class="metric-unit" th:if="${readings.size() >= 2}">L/min</span>
+                    </div>
+
+                    <div class="row g-3 pt-3 border-top border-secondary border-opacity-25">
+                        <div class="col-sm-4">
+                            <div class="small text-muted">Accumulated Water</div>
+                            <div class="fw-bold font-mono text-light fs-5" id="live-s1-vol" th:text="${readings.size() >= 2 ? readings[0].totalLitres + ' L' : 'Unavailable'}">Unavailable</div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="small text-muted">Raw Pulses</div>
+                            <div class="fw-bold font-mono text-cyan fs-5" id="live-s1-pulses" th:text="${readings.size() >= 2 && readings[0].valid ? #numbers.formatInteger(readings[0].pulseCount, 1, 'COMMA') : 'Unavailable'}">Unavailable</div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="small text-muted">Configured Calibration</div>
+                            <div class="fw-bold font-mono text-light" th:text="${settings.sensor1Calibration + ' p/L (configured)'}">450.0 p/L (configured)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sensor 2 (Outlet) Card -->
+        <div class="col-lg-6">
+            <div class="card-guard h-100 border-info">
+                <div class="card-guard-header bg-info bg-opacity-10">
+                    <div>
+                        <span class="card-guard-title text-cyan"><i class="bi bi-box-arrow-right"></i> SENSOR 2: OUTLET FLOW METER</span>
+                        <div class="small text-muted">Model: YF-S201 | Target Signal Pin: ESP32 GPIO 26</div>
+                    </div>
+                      <span data-sensor-valid="outlet" class="badge bg-success-subtle text-success border border-success-subtle"
+                          th:text="${readings.size() >= 2 ? (readings[1].valid ? 'FIRMWARE REPORTED VALID' : 'VALIDITY UNREPORTED/INVALID') : 'UNAVAILABLE'}">UNAVAILABLE</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="d-flex align-items-baseline mb-3">
+                        <span class="metric-number text-cyan" id="live-s2-flow" th:text="${readings.size() >= 2 ? readings[1].flowRateLpm : 'Unavailable'}">Unavailable</span>
+                        <span class="metric-unit" th:if="${readings.size() >= 2}">L/min</span>
+                    </div>
+
+                    <div class="row g-3 pt-3 border-top border-secondary border-opacity-25">
+                        <div class="col-sm-4">
+                            <div class="small text-muted">Accumulated Water</div>
+                            <div class="fw-bold font-mono text-light fs-5" id="live-s2-vol" th:text="${readings.size() >= 2 ? readings[1].totalLitres + ' L' : 'Unavailable'}">Unavailable</div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="small text-muted">Raw Pulses</div>
+                            <div class="fw-bold font-mono text-cyan fs-5" id="live-s2-pulses" th:text="${readings.size() >= 2 && readings[1].valid ? #numbers.formatInteger(readings[1].pulseCount, 1, 'COMMA') : 'Unavailable'}">Unavailable</div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="small text-muted">Configured Calibration</div>
+                            <div class="fw-bold font-mono text-light" th:text="${settings.sensor2Calibration + ' p/L (configured)'}">450.0 p/L (configured)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Telemetry Stream Chart -->
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="card-guard">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-activity text-info"></i> Real-Time Telemetry Stream (Flow Rate in L/min)</span>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="small text-muted font-mono"><span class="badge bg-info p-1 me-1"></span> S1 (Inlet)</span>
+                        <span class="small text-muted font-mono"><span class="badge bg-cyan p-1 me-1"></span> S2 (Outlet)</span>
+                        <span class="badge bg-dark border border-secondary font-mono">Updates every 2s</span>
+                    </div>
+                </div>
+                <div class="card-guard-body">
+                    <div style="height: 300px;">
+                        <canvas id="liveStreamChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Reading Historical Snapshot Table -->
+    <div class="row g-3">
+        <div class="col-12">
+            <div class="card-guard">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-clock-history text-secondary"></i> Telemetry Snapshot Log (Recent Sample Windows)</span>
+                            <span class="badge bg-secondary font-mono" th:text="${systemStatus.demoMode ? 'Demo samples' : 'Latest sample only'}">Demo samples</span>
+                </div>
+                <div class="card-guard-body p-0">
+                    <div class="table-responsive">
+                        <table class="table-guard">
+                            <thead>
+                            <tr>
+                                <th>Sample Time</th>
+                                <th>Sensor 1 Flow</th>
+                                <th>Sensor 2 Flow</th>
+                                <th>Differential (Δ)</th>
+                                <th>Evaluation</th>
+                                <th>Data Integrity</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr id="hardware-snapshot-row" th:if="${readings.size() >= 2}">
+                                <td id="hardware-snapshot-time" class="font-mono text-muted" th:text="${systemStatus.lastUpdateTimestamp}">Latest</td>
+                                <td id="hardware-snapshot-inlet" class="font-mono text-light" th:text="${#numbers.formatDecimal(readings[0].flowRateLpm, 1, 2) + ' L/min'}">0.00 L/min</td>
+                                <td id="hardware-snapshot-outlet" class="font-mono text-light" th:text="${#numbers.formatDecimal(readings[1].flowRateLpm, 1, 2) + ' L/min'}">0.00 L/min</td>
+                                <td id="hardware-snapshot-difference" class="font-mono text-success" th:text="${#numbers.formatDecimal(leakage.differentialFlowLpm, 1, 2) + ' L/min'}">0.00 L/min</td>
+                                <td id="hardware-snapshot-evaluation" th:text="${leakage.statusLabel}">Latest evaluation</td>
+                                <td id="hardware-snapshot-integrity" th:text="${readings[0].valid and readings[1].valid ? 'Both sensors valid' : 'Sensor invalid'}">Both sensors valid</td>
+                            </tr>
+                            <tr th:if="${readings.size() < 2}">
+                                <td colspan="6" class="text-center text-muted">No recent Firebase telemetry is available.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:fragment="scripts">
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const ctx = document.getElementById('liveStreamChart');
+    if (ctx) {
+        const initialLabels = [];
+        const s1Init = [];
+        const s2Init = [];
+
+        window.liveTelemetryChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: initialLabels,
+                datasets: [
+                    {
+                        label: 'Sensor 1 - Inlet (GPIO 27)',
+                        data: s1Init,
+                        borderColor: '#0284C7',
+                        backgroundColor: 'rgba(2, 132, 199, 0.1)',
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.35
+                    },
+                    {
+                        label: 'Sensor 2 - Outlet (GPIO 26)',
+                        data: s2Init,
+                        borderColor: '#06B6D4',
+                        backgroundColor: 'rgba(6, 182, 212, 0.05)',
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.35
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: '#94A3B8' } }
+                },
+                scales: {
+                    x: { ticks: { color: '#94A3B8' }, grid: { color: 'rgba(56, 189, 248, 0.08)' } },
+                    y: {
+                        min: 0,
+                        max: 8,
+                        ticks: { color: '#94A3B8' },
+                        grid: { color: 'rgba(56, 189, 248, 0.08)' }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+</div>
+</body>
+</html>

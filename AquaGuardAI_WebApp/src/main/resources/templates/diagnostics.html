@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/main :: layout('System Diagnostics & Hardware Roadmap', 'Internal Subsystem Health, Telemetry Status & Integration Guide', ~{::content}, ~{::scripts})}">
+<body>
+
+<div th:fragment="content">
+    <!-- Status Cards Row -->
+    <div class="row g-3 mb-4">
+        <!-- Application Core -->
+        <div class="col-md-3">
+            <div class="card-guard h-100">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-cpu text-info"></i> Application Core</span>
+                    <span class="badge bg-success">HEALTHY</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="fw-bold text-light font-mono mb-1">Spring Boot 3.3.4</div>
+                    <div class="small text-muted">Java 21 LTS Runtime</div>
+                    <div class="small text-cyan font-mono mt-2">HTTP Port 8080 Active</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Telemetry Data Mode -->
+        <div class="col-md-3">
+            <div class="card-guard h-100 border-warning">
+                <div class="card-guard-header bg-warning bg-opacity-10">
+                    <span class="card-guard-title text-warning"><i class="bi bi-broadcast text-warning"></i> Data Source Mode</span>
+                    <span id="diagnostics-data-source-mode" class="badge bg-warning text-dark font-mono" th:text="${systemStatus.hardwareConnected ? 'LIVE TELEMETRY' : 'NO LIVE TELEMETRY'}">NO LIVE TELEMETRY</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="fw-bold text-light font-mono mb-1">FirebaseTelemetryService</div>
+                    <div class="small text-muted" th:text="${systemStatus.diagnosticMessage}">Current telemetry status.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hardware Status -->
+        <div class="col-md-3">
+            <div class="card-guard h-100 border-danger">
+                <div class="card-guard-header bg-danger bg-opacity-10">
+                    <span class="card-guard-title text-danger"><i class="bi bi-hdd-network text-danger"></i> Hardware Status</span>
+                    <span id="diagnostics-hardware-status" class="badge" th:classappend="${systemStatus.hardwareConnected ? ' bg-success' : ' bg-danger'}"
+                          th:text="${systemStatus.hardwareConnected ? 'HARDWARE CONNECTED' : 'HARDWARE NOT CONNECTED'}">HARDWARE NOT CONNECTED</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="fw-bold text-light font-mono mb-1" th:text="${systemStatus.esp32DeviceName}">ESP32 Dev Board</div>
+                    <div class="small text-muted">Target Pins: GPIO 27 & GPIO 26</div>
+                    <div class="small text-muted mt-1" th:text="${systemStatus.lastUpdateTimestamp}">Never received</div>
+                    <div class="small text-muted mt-1">
+                        Inlet pulse report:
+                        <span class="text-light" th:text="${readings.size() >= 2 ? (readings[0].valid ? 'Observed since boot' : 'Not observed / unavailable') : 'Unavailable'}">Unavailable</span>
+                    </div>
+                    <div class="small text-muted">
+                        Outlet pulse report:
+                        <span class="text-light" th:text="${readings.size() >= 2 ? (readings[1].valid ? 'Observed since boot' : 'Not observed / unavailable') : 'Unavailable'}">Unavailable</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Firebase Cloud Status -->
+        <div class="col-md-3">
+            <div class="card-guard h-100">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-cloud text-secondary"></i> Cloud RTDB Bridge</span>
+                    <span class="badge bg-secondary font-mono" th:text="${systemStatus.firebaseStatus}">STATUS UNKNOWN</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="fw-bold text-light font-mono mb-1">Firebase RTDB</div>
+                    <div class="small text-muted">Firebase async telemetry writes are not confirmed by the telemetry endpoint.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Future Hardware Integration Architecture Plan -->
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="card-guard">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-diagram-3-fill text-cyan"></i> Future Hardware Integration Roadmap (College Final Review)</span>
+                    <span class="badge bg-info-subtle text-cyan border border-cyan">Architecture Blueprint</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="p-3 rounded bg-dark border border-secondary h-100">
+                                <h6 class="text-cyan mb-2">Step 1: Physical Sensor Wiring & 5V Safety</h6>
+                                <p class="small text-muted mb-2">
+                                    The YF-S201 Hall sensor requires 5V VCC to spin reliably. Its yellow signal wire outputs a 5V square wave. Because ESP32 GPIO pins are <strong>not 5V tolerant</strong> (3.3V max):
+                                </p>
+                                <ul class="small text-light mb-0 ps-3">
+                                    <li>Use a 1kΩ + 2kΩ resistor divider to step 5V pulses down to 3.3V.</li>
+                                    <li>Tie sensor 5V ground and ESP32 GND together (mandatory common ground).</li>
+                                    <li>Connect Signal 1 to GPIO 27 and Signal 2 to GPIO 26.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="p-3 rounded bg-dark border border-secondary h-100">
+                                <h6 class="text-info mb-2">Step 2: Volumetric Bucket Calibration</h6>
+                                <p class="small text-muted mb-2">
+                                    Never assume a generic calibration factor. Individual turbine impellers vary:
+                                </p>
+                                <ul class="small text-light mb-0 ps-3">
+                                    <li>Dispense exactly 5.0 Litres of water into a calibrated bucket.</li>
+                                    <li>Count raw interrupt pulses in ESP32 serial monitor (e.g. 2,250 pulses).</li>
+                                    <li>Calculate factor: <code>K = 2250 / 5.0 = 450.0 pulses/Litre</code>.</li>
+                                    <li>Store separate calibration constants for Sensor 1 and Sensor 2.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="p-3 rounded bg-dark border border-secondary h-100">
+                                <h6 class="text-success mb-2">Step 3: Seamless Software Bridge Replacement</h6>
+                                <p class="small text-muted mb-2">
+                                    The AquaGuard backend is architected around the <code>WaterDataService</code> interface:
+                                </p>
+                                <ul class="small text-light mb-0 ps-3">
+                                    <li>Create <code>FirebaseWaterDataService</code> or an MQTT/REST subscriber class.</li>
+                                    <li>Annotate it with <code>@Primary @Service</code>.</li>
+                                    <li>Spring Boot automatically injects the live hardware telemetry into all 12 controllers and views with zero UI refactoring!</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Troubleshooting Guide -->
+    <div class="row g-3">
+        <div class="col-12">
+            <div class="card-guard">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-question-circle text-warning"></i> Developer & Presentation Troubleshooting Guide</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="accordion accordion-flush" id="troubleshootAccordion">
+                        <div class="accordion-item bg-transparent text-light border-secondary">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed bg-transparent text-light" type="button" data-bs-dismiss="collapse" data-bs-toggle="collapse" data-bs-target="#tb1">
+                                    1. Port 8080 is already in use by another program on Windows
+                                </button>
+                            </h2>
+                            <div id="tb1" class="accordion-collapse collapse" data-bs-parent="#troubleshootAccordion">
+                                <div class="accordion-body small text-muted">
+                                    Run <code>netstat -ano | findstr :8080</code> in Windows PowerShell to find the PID. Terminate it with <code>taskkill /F /PID &lt;PID&gt;</code>, or change <code>server.port=8081</code> in <code>src/main/resources/application.properties</code>.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item bg-transparent text-light border-secondary">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed bg-transparent text-light" type="button" data-bs-dismiss="collapse" data-bs-toggle="collapse" data-bs-target="#tb2">
+                                    2. How to demonstrate a leakage alert to the college review committee?
+                                </button>
+                            </h2>
+                            <div id="tb2" class="accordion-collapse collapse" data-bs-parent="#troubleshootAccordion">
+                                <div class="accordion-body small text-muted">
+                                    Leakage evaluation uses sequential cumulative-volume readings from Firebase. It reports insufficient data until matched inlet and outlet samples are available; it does not fabricate a leak event.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item bg-transparent text-light border-secondary">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed bg-transparent text-light" type="button" data-bs-dismiss="collapse" data-bs-toggle="collapse" data-bs-target="#tb3">
+                                    3. Charts do not appear or remain blank
+                                </button>
+                            </h2>
+                            <div id="tb3" class="accordion-collapse collapse" data-bs-parent="#troubleshootAccordion">
+                                <div class="accordion-body small text-muted">
+                                    Chart.js is loaded from the public CDN (jsdelivr). If presenting without active internet connectivity on your laptop, copy <code>chart.umd.min.js</code> into <code>src/main/resources/static/js/</code> and link locally.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:fragment="scripts"></div>
+</body>
+</html>

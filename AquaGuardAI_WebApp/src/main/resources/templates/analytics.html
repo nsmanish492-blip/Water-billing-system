@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/main :: layout('Usage Analytics & Trends', 'Temporal Water Consumption & Sensor Variance Analysis', ~{::content}, ~{::scripts})}">
+<body>
+
+<div id="analytics-page" th:fragment="content" th:attr="data-usage-range=${selectedRange}">
+    <!-- Controls Bar -->
+    <div class="card-guard mb-4">
+        <div class="card-guard-body py-3">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="small text-muted fw-bold text-uppercase">Time Range Filter:</span>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <a th:href="@{/analytics(range='24h')}" class="btn"
+                           th:classappend="${selectedRange == '24h'} ? 'btn-primary' : 'btn-outline-secondary'">Last 24 Hours</a>
+                        <a th:href="@{/analytics(range='7d')}" class="btn"
+                           th:classappend="${selectedRange == '7d'} ? 'btn-primary' : 'btn-outline-secondary'">Last 7 Days</a>
+                        <a th:href="@{/analytics(range='30d')}" class="btn"
+                           th:classappend="${selectedRange == '30d'} ? 'btn-primary' : 'btn-outline-secondary'">Last 30 Days</a>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-3 small text-muted font-mono">
+                    <span><i class="bi bi-info-circle text-info"></i> Units: Litres (Volume), L/min (Flow Rate)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart 1: Hourly Flow & Consumption (24 Hours) -->
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="card-guard">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-clock text-info"></i> 24-Hour Diurnal Flow Curve (Sensor 1 vs Sensor 2)</span>
+                    <span class="badge bg-dark border border-secondary font-mono">Hourly Resolution (L/min)</span>
+                </div>
+                <div class="card-guard-body">
+                    <div style="height: 320px;">
+                        <canvas id="diurnalChart"></canvas>
+                    </div>
+                    <div class="small text-muted mt-2 text-center">
+                        Note the distinct diurnal morning (07:00 - 09:00) and evening (18:00 - 20:00) domestic consumption peaks.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 2: Daily Consumption & Anomaly History -->
+    <div class="row g-3 mb-4">
+        <!-- Daily Aggregate Bar Chart -->
+        <div class="col-lg-7">
+            <div class="card-guard h-100">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-bar-chart text-cyan"></i> Daily Water Consumption Trend</span>
+                    <span class="badge bg-dark border border-secondary">Total Litres</span>
+                </div>
+                <div class="card-guard-body">
+                    <div style="height: 280px;">
+                        <canvas id="dailyTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Abnormal Reading Scatter / Distribution -->
+        <div class="col-lg-5">
+            <div class="card-guard h-100">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-exclamation-circle text-warning"></i> Anomaly Discrepancy Events</span>
+                    <span class="badge bg-secondary font-mono" th:text="${hourlyUsage.isEmpty() ? 'No telemetry history' : 'Firebase telemetry'}">No telemetry history</span>
+                </div>
+                <div class="card-guard-body p-0">
+                    <div class="table-responsive">
+                        <table class="table-guard">
+                            <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>S1 Flow</th>
+                                <th>S2 Flow</th>
+                                <th>Delta</th>
+                                <th>Status</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="record : ${hourlyUsage}" th:if="${record.abnormalFlag}">
+                                <td class="font-mono text-muted" th:text="${record.timestamp}">Time unavailable</td>
+                                <td class="font-mono text-light" th:text="${record.sensor1FlowLpm}">0</td>
+                                <td class="font-mono text-light" th:text="${record.sensor2FlowLpm}">0</td>
+                                <td class="font-mono text-warning" th:text="${record.sensor1FlowLpm - record.sensor2FlowLpm}">0</td>
+                                <td><span class="badge bg-warning">Observed discrepancy</span></td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(hourlyUsage)}">
+                                <td colspan="5" class="text-center text-muted">Insufficient telemetry history.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:fragment="scripts">
+<script th:inline="javascript">
+document.addEventListener('DOMContentLoaded', () => {
+    const selectedRange = document.getElementById('analytics-page')?.dataset.usageRange || '24h';
+    const hourlyUsage = /*[[${hourlyUsage}]]*/ [];
+    const dailyUsage = /*[[${dailyUsage}]]*/ [];
+    // 1. Diurnal Line Chart
+    const ctxDiurnal = document.getElementById('diurnalChart');
+    if (ctxDiurnal) {
+        const labels = hourlyUsage.map(record => record.label);
+        const s1Data = hourlyUsage.map(record => record.sensor1FlowLpm);
+        const s2Data = hourlyUsage.map(record => record.sensor2FlowLpm);
+
+        window.analyticsHourlyUsageChart = new Chart(ctxDiurnal, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Sensor 1 - Inlet (GPIO 27)',
+                        data: s1Data,
+                        borderColor: '#0284C7',
+                        backgroundColor: 'rgba(2, 132, 199, 0.15)',
+                        fill: true,
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Sensor 2 - Outlet (GPIO 26)',
+                        data: s2Data,
+                        borderColor: '#06B6D4',
+                        backgroundColor: 'transparent',
+                        borderDash: [5, 5],
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#94A3B8' } } },
+                scales: {
+                    x: { ticks: { color: '#94A3B8' }, grid: { color: 'rgba(56, 189, 248, 0.08)' } },
+                    y: { title: { display: true, text: 'Flow Rate (L/min)', color: '#94A3B8' }, ticks: { color: '#94A3B8' }, grid: { color: 'rgba(56, 189, 248, 0.08)' } }
+                }
+            }
+        });
+    }
+
+    // 2. Daily Trend Bar Chart
+    const ctxDaily = document.getElementById('dailyTrendChart');
+    if (ctxDaily) {
+        window.analyticsDailyUsageChart = new Chart(ctxDaily, {
+            type: 'bar',
+            data: {
+                labels: (selectedRange === '30d' ? monthlyUsage : dailyUsage).map(record => record.label),
+                datasets: [{
+                    label: 'Measured Volume (L)',
+                    data: (selectedRange === '30d' ? monthlyUsage : dailyUsage).map(record => record.consumptionLitres),
+                    backgroundColor: 'rgba(56, 189, 248, 0.6)',
+                    borderColor: '#38BDF8',
+                    borderWidth: 1.5,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#94A3B8' } } },
+                scales: {
+                    x: { ticks: { color: '#94A3B8' }, grid: { color: 'rgba(56, 189, 248, 0.08)' } },
+                    y: { title: { display: true, text: 'Litres (L)', color: '#94A3B8' }, ticks: { color: '#94A3B8' }, grid: { color: 'rgba(56, 189, 248, 0.08)' } }
+                }
+            }
+        });
+    }
+});
+</script>
+</div>
+</body>
+</html>

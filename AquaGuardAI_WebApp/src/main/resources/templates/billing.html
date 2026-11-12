@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/main :: layout('Smart Water Billing', 'Volumetric Metering & Tariff Projections', ~{::content}, ~{::scripts})}">
+<body>
+
+<div th:fragment="content">
+    <!-- Billing Header Banner -->
+    <div class="row g-3 mb-4">
+        <!-- Daily Charge -->
+        <div class="col-md-4">
+            <div class="card-guard h-100">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-clock-history text-cyan"></i> Daily Billing Estimate</span>
+                    <span class="badge bg-secondary font-mono" th:text="${billing.dailyAvailable ? billing.billingStatus : 'Insufficient history'}">Insufficient history</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="d-flex align-items-baseline mb-2">
+                        <span class="metric-currency">₹</span>
+                        <span class="metric-number text-success" th:text="${billing.dailyAvailable ? billing.dailyCostInr : 'N/A'}">N/A</span>
+                    </div>
+                    <div class="small text-muted">
+                        <span th:if="${billing.dailyAvailable}">Measured: <strong class="text-light font-mono" th:text="${billing.dailyConsumptionLitres} + ' L'">0 L</strong>
+                        (<span th:text="${#numbers.formatDecimal(billing.dailyConsumptionLitres / 1000.0, 1, 3)}">0.000</span> kL)</span>
+                        <span th:unless="${billing.dailyAvailable}">Need a stored sample from before today.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weekly Charge -->
+        <div class="col-md-4">
+            <div class="card-guard h-100">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-calendar-week text-info"></i> Weekly Billing Estimate</span>
+                    <span class="badge bg-secondary font-mono" th:text="${billing.weeklyAvailable ? billing.billingStatus : 'Insufficient history'}">Insufficient history</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="d-flex align-items-baseline mb-2">
+                        <span class="metric-currency">₹</span>
+                        <span class="metric-number text-success" th:text="${billing.weeklyAvailable ? billing.weeklyCostInr : 'N/A'}">N/A</span>
+                    </div>
+                    <div class="small text-muted">
+                        <span th:if="${billing.weeklyAvailable}">Measured: <strong class="text-light font-mono" th:text="${billing.weeklyConsumptionLitres} + ' L'">0 L</strong>
+                        (<span th:text="${#numbers.formatDecimal(billing.weeklyConsumptionLitres / 1000.0, 1, 3)}">0.000</span> kL)</span>
+                        <span th:unless="${billing.weeklyAvailable}">Need a stored sample from before this week.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Charge -->
+        <div class="col-md-4">
+            <div class="card-guard h-100 border-success">
+                <div class="card-guard-header bg-success bg-opacity-10">
+                    <span class="card-guard-title text-success"><i class="bi bi-calendar-month text-success"></i> Monthly Billing Estimate</span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle" th:text="${billing.monthlyAvailable ? billing.billingStatus : 'Insufficient history'}">Insufficient history</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="d-flex align-items-baseline mb-2">
+                        <span class="metric-currency">₹</span>
+                        <span class="metric-number text-success" th:text="${billing.monthlyAvailable ? billing.monthlyCostInr : 'N/A'}">N/A</span>
+                    </div>
+                    <div class="small text-muted">
+                        <span th:if="${billing.monthlyAvailable}">Measured: <strong class="text-light font-mono" th:text="${billing.monthlyConsumptionLitres} + ' L'">0 L</strong>
+                        (<span th:text="${#numbers.formatDecimal(billing.monthlyConsumptionLitres / 1000.0, 1, 2)}">0.00</span> kL)</span>
+                        <span th:unless="${billing.monthlyAvailable}">Need a stored sample from before this month.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tariff Adjuster & Formula Details -->
+    <div class="row g-3 mb-4">
+        <!-- Tariff Configuration Form -->
+        <div class="col-lg-5">
+            <div class="card-guard h-100">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-sliders text-cyan"></i> Configure Water Tariff</span>
+                </div>
+                <div class="card-guard-body">
+                    <form th:action="@{/billing/update-tariff}" method="post">
+                        <div class="mb-3">
+                            <label class="form-guard-label" for="tariffInput">Tariff Rate (INR per 1,000 Litres)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-dark border-secondary text-success fw-bold">₹</span>
+                                <input type="number" step="0.5" min="0.5" id="tariffInput" name="tariff"
+                                       class="form-control form-guard-control font-mono"
+                                       th:value="${billing.tariffPerKiloLitre}" required>
+                                <button class="btn btn-guard-primary" type="submit">Update Tariff</button>
+                            </div>
+                            <div class="form-text text-muted small mt-2">
+                                Standard municipal tariff in Indian urban regions typically ranges between ₹10 to ₹25 per kilo-litre (1,000 L).
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="p-3 rounded bg-dark border border-secondary mt-4">
+                        <div class="small fw-bold text-muted mb-1 text-uppercase">Mathematical Calculation:</div>
+                        <div class="font-mono text-cyan small">
+                            Charge = (Consumption in Litres / 1,000) &times; Tariff
+                        </div>
+                        <div class="small text-muted mt-2">
+                            e.g. (<span th:text="${billing.monthlyConsumptionLitres}">12480</span> / 1,000) &times; ₹<span th:text="${billing.tariffPerKiloLitre}">15.0</span> = ₹<strong class="text-light" th:text="${billing.monthlyCostInr}">187.20</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Optional Slab-Based Tier Tariff Extension -->
+        <div class="col-lg-7">
+            <div class="card-guard h-100">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-layers-fill text-warning"></i> Optional Extension: Tiered Progressive Slab Tariff</span>
+                    <span class="badge bg-warning text-dark font-mono">CONSERVATION MODEL</span>
+                </div>
+                <div class="card-guard-body">
+                    <p class="small text-muted mb-3">
+                        Progressive slabs discourage water wastage by charging higher rates as consumption crosses tiered thresholds. Below is an illustrative demonstration for the monthly volume:
+                    </p>
+
+                    <div class="table-responsive">
+                        <table class="table-guard mb-3">
+                            <thead>
+                            <tr>
+                                <th>Tier Band</th>
+                                <th>Range</th>
+                                <th>Rate (₹/kL)</th>
+                                <th>Tier Volume</th>
+                                <th>Subtotal (₹)</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="slab : ${billing.slabTiers}">
+                                <td class="fw-semibold text-light" th:text="${slab.tierName}">Tier 1</td>
+                                <td class="font-mono text-muted small" th:text="${slab.rangeLabel}">0 - 500 L</td>
+                                <td class="font-mono text-cyan">₹<span th:text="${slab.ratePerKiloLitre}">8.00</span></td>
+                                <td class="font-mono text-light" th:text="${slab.volumeInTierLitres} + ' L'">500.0 L</td>
+                                <td class="font-mono text-success fw-bold">₹<span th:text="${slab.costInr}">4.00</span></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center p-2 rounded bg-dark border border-secondary">
+                        <span class="small text-muted">Slab-Based Total Estimate:</span>
+                        <span class="font-mono fs-5 fw-bold text-success">₹<span th:text="${billing.slabEstimatedCostInr}">175.40</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-12">
+            <div class="card-guard">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-clock-history text-info"></i> Stored Billing Periods</span>
+                    <span class="badge bg-secondary">Firebase ledger</span>
+                </div>
+                <div class="card-guard-body p-0">
+                    <div class="table-responsive">
+                        <table class="table-guard">
+                            <thead><tr><th>Period</th><th>Measured Consumption</th><th>Calculated Amount</th><th>Data Status</th></tr></thead>
+                            <tbody>
+                            <tr th:each="period : ${billingHistory}">
+                                <td th:text="${period.billingPeriodId}">YYYY-MM</td>
+                                <td th:text="${period.monthlyAvailable ? period.monthlyConsumptionLitres + ' L' : 'Unavailable'}">Unavailable</td>
+                                <td th:text="${period.monthlyAvailable ? '₹' + period.monthlyCostInr : 'Unavailable'}">Unavailable</td>
+                                <td th:text="${period.periodDataStatus + ' / ' + period.billingStatus}">INSUFFICIENT HISTORY / ESTIMATE</td>
+                            </tr>
+                            <tr th:if="${billingHistory.isEmpty()}"><td colspan="4" class="text-center text-muted">No complete monthly billing period has been stored yet.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:fragment="scripts"></div>
+</body>
+</html>

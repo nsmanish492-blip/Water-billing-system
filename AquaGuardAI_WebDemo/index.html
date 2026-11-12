@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AquaGuard AI — Smart Water Monitoring & Leakage Detection</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Google Fonts for modern typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Ambient background glow elements -->
+  <div class="bg-glow glow-1"></div>
+  <div class="bg-glow glow-2"></div>
+
+  <!-- Header Navigation -->
+  <header class="navbar">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 40 40" class="logo-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Pipe Network Base -->
+          <path d="M6 26H14V22H6V26Z" fill="#38BDF8" fill-opacity="0.6"/>
+          <path d="M26 22V26H34V22H26Z" fill="#38BDF8" fill-opacity="0.6"/>
+          <path d="M14 21C14 18.2386 16.2386 16 19 16H21C23.7614 16 26 18.2386 26 21V27H14V21Z" stroke="#0284C7" stroke-width="2"/>
+          <!-- Glowing Water Drop -->
+          <path d="M20 7C20 7 12 16.5 12 21.5C12 25.9183 15.5817 29.5 20 29.5C24.4183 29.5 28 21.5 28 21.5C28 16.5 20 7 20 7Z" fill="url(#dropGrad)" />
+          <defs>
+            <linearGradient id="dropGrad" x1="20" y1="7" x2="20" y2="29.5" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#38BDF8"/>
+              <stop offset="1" stop-color="#0284C7"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <div class="brand-title">AquaGuard <span class="highlight">AI</span></div>
+        <div class="brand-subtitle">Smart Water Billing & Pipe Health Monitor</div>
+      </div>
+    </div>
+
+    <!-- Live Status Indicators -->
+    <div class="nav-controls">
+      <div class="connection-badge" id="connBadge">
+        <span class="status-dot"></span>
+        <span class="status-label" id="connText">Connecting...</span>
+      </div>
+
+      <div class="demo-tag" id="demoBanner" style="display: none;">
+        <span class="demo-pill">DEMO SIMULATION</span>
+      </div>
+
+      <button id="btnManualRefresh" class="btn-icon" title="Manual Refresh" aria-label="Refresh Data">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Diagnostic Alert Bar -->
+  <div class="alert-bar" id="diagnosticBar">
+    <div class="alert-content">
+      <span class="alert-icon" id="diagIcon">ℹ️</span>
+      <span class="alert-message" id="diagMsg">System initializing — establishing communication with ESP32...</span>
+    </div>
+    <span class="alert-time" id="lastHeartbeat">Last sync: —</span>
+  </div>
+
+  <main class="dashboard-grid">
+    <!-- Top Row: Primary Live Telemetry -->
+    <section class="card-grid col-4">
+      <!-- Sensor 1 Card -->
+      <div class="card metric-card" id="cardSensor1">
+        <div class="card-header">
+          <div class="card-tag tag-s1">SENSOR 1 (INLET / GPIO 27)</div>
+          <span class="sensor-state-badge" id="s1State">ACTIVE</span>
+        </div>
+        <div class="metric-main">
+          <div class="metric-value-wrap">
+            <span class="metric-value" id="s1Flow">0.00</span>
+            <span class="metric-unit">L/min</span>
+          </div>
+          <div class="metric-progress-bg">
+            <div class="metric-progress-bar bar-s1" id="s1Bar" style="width: 0%;"></div>
+          </div>
+        </div>
+        <div class="card-footer-stats">
+          <div class="footer-stat">
+            <span class="stat-label">Accumulated</span>
+            <span class="stat-val" id="s1Vol">0.00 L</span>
+          </div>
+          <div class="footer-stat">
+            <span class="stat-label">Raw Pulses</span>
+            <span class="stat-val font-mono" id="s1Pulses">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sensor 2 Card -->
+      <div class="card metric-card" id="cardSensor2">
+        <div class="card-header">
+          <div class="card-tag tag-s2">SENSOR 2 (OUTLET / GPIO 26)</div>
+          <span class="sensor-state-badge" id="s2State">ACTIVE</span>
+        </div>
+        <div class="metric-main">
+          <div class="metric-value-wrap">
+            <span class="metric-value" id="s2Flow">0.00</span>
+            <span class="metric-unit">L/min</span>
+          </div>
+          <div class="metric-progress-bg">
+            <div class="metric-progress-bar bar-s2" id="s2Bar" style="width: 0%;"></div>
+          </div>
+        </div>
+        <div class="card-footer-stats">
+          <div class="footer-stat">
+            <span class="stat-label">Accumulated</span>
+            <span class="stat-val" id="s2Vol">0.00 L</span>
+          </div>
+          <div class="footer-stat">
+            <span class="stat-label">Raw Pulses</span>
+            <span class="stat-val font-mono" id="s2Pulses">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Net Volume & Mode Definition -->
+      <div class="card metric-card">
+        <div class="card-header">
+          <div class="card-tag tag-net">TOTAL MEASURED VOLUME</div>
+          <span class="mode-select-pill" id="volModePill">Series (Inlet S1)</span>
+        </div>
+        <div class="metric-main">
+          <div class="metric-value-wrap">
+            <span class="metric-value highlight-cyan" id="totalVolume">0.00</span>
+            <span class="metric-unit">Litres</span>
+          </div>
+          <p class="metric-subtext" id="totalModeDesc">
+            Series setup: Inlet volume (Sensor 1) represents total water consumed.
+          </p>
+        </div>
+        <div class="card-footer-stats">
+          <div class="footer-stat">
+            <span class="stat-label">Sensor 1 Vol</span>
+            <span class="stat-val" id="s1VolMini">0.00 L</span>
+          </div>
+          <div class="footer-stat">
+            <span class="stat-label">Sensor 2 Vol</span>
+            <span class="stat-val" id="s2VolMini">0.00 L</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Water Billing Estimator -->
+      <div class="card metric-card">
+        <div class="card-header">
+          <div class="card-tag tag-bill">SMART BILLING ESTIMATE</div>
+          <span class="currency-tag">₹ / L</span>
+        </div>
+        <div class="metric-main">
+          <div class="metric-value-wrap">
+            <span class="metric-currency">₹</span>
+            <span class="metric-value highlight-emerald" id="estBill">0.00</span>
+          </div>
+          <p class="metric-subtext">
+            Based on <span id="billRateDisplay">₹15.00</span> per 1,000 L tariff.
+          </p>
+        </div>
+        <div class="card-footer-stats">
+          <div class="footer-stat">
+            <span class="stat-label">Daily Projected</span>
+            <span class="stat-val" id="projDaily">₹0.00</span>
+          </div>
+          <div class="footer-stat">
+            <span class="stat-label">Units (kL)</span>
+            <span class="stat-val font-mono" id="unitsUsed">0.000</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Middle Row: Pipe Health & Anomaly Detection + Topology Details -->
+    <section class="card-grid col-2">
+      <!-- Leakage & Pipe Health Diagnostic -->
+      <div class="card panel-card" id="leakageCard">
+        <div class="card-header">
+          <div class="header-with-icon">
+            <span class="header-icon">🛡️</span>
+            <h3>Leakage Analysis & Pipe Health</h3>
+          </div>
+          <span class="leak-badge status-normal" id="leakBadge">NORMAL FLOW</span>
+        </div>
+
+        <div class="leak-details">
+          <div class="flow-diff-box">
+            <div class="diff-metric">
+              <span class="diff-title">Flow Differential (Δ Flow = S1 - S2)</span>
+              <div class="diff-numbers">
+                <span class="diff-value font-mono" id="diffFlow">0.00</span>
+                <span class="diff-unit">L/min</span>
+              </div>
+            </div>
+            <div class="diff-status-box" id="diffStatusContainer">
+              <p class="diff-verdict" id="leakVerdict">Balanced flow across pipe segment.</p>
+              <p class="diff-explanation" id="leakExplanation">
+                Sensor 1 (Inlet) and Sensor 2 (Outlet) show matching flow rates within calibrated tolerance limit.
+              </p>
+            </div>
+          </div>
+
+          <div class="health-breakdown">
+            <div class="health-item">
+              <span class="item-title">Pipe Transmission Efficiency</span>
+              <div class="health-bar-container">
+                <div class="health-bar" id="pipeEffBar" style="width: 100%;"></div>
+              </div>
+              <span class="item-val" id="pipeEffVal">100%</span>
+            </div>
+            <div class="health-item">
+              <span class="item-title">Continuous Anomaly Counter</span>
+              <span class="item-val font-mono" id="anomalySeconds">0 s (threshold: 3 s)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Physical Arrangement & Pipe Topology Controller -->
+      <div class="card panel-card">
+        <div class="card-header">
+          <div class="header-with-icon">
+            <span class="header-icon">📐</span>
+            <h3>Sensor Topology & Physical Configuration</h3>
+          </div>
+        </div>
+
+        <div class="topology-body">
+          <div class="topology-selector">
+            <label class="radio-label">
+              <input type="radio" name="pipeTopology" value="series" checked id="topoSeries">
+              <span class="radio-custom"></span>
+              <div class="radio-info">
+                <strong>Series Pipeline (Recommended for Leak Demo)</strong>
+                <p>Sensor 1 (Inlet) ➔ Pipe Section ➔ Sensor 2 (Outlet). Differential triggers leak alert.</p>
+              </div>
+            </label>
+
+            <label class="radio-label">
+              <input type="radio" name="pipeTopology" value="parallel" id="topoParallel">
+              <span class="radio-custom"></span>
+              <div class="radio-info">
+                <strong>Independent / Parallel Branches</strong>
+                <p>Two separate pipelines or fixtures. Total Volume = S1 + S2. Differential leak comparison is disabled.</p>
+              </div>
+            </label>
+          </div>
+
+          <div class="callout-tip">
+            <strong>Demonstration Tip:</strong> In series mode, run water through both sensors. Then introduce a T-joint bypass or pinch the outlet sensor to simulate an abnormal flow differential.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom Row: Real-time Telemetry Graph -->
+    <section class="card panel-card full-width">
+      <div class="card-header">
+        <div class="header-with-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 3v18h18M7 16l4-8 4 6 5-10"/>
+          </svg>
+          <h3>Real-Time Flow Rate Telemetry (L/min)</h3>
+        </div>
+        <div class="chart-legend">
+          <span class="legend-item"><span class="legend-color s1-color"></span> Sensor 1 (Inlet)</span>
+          <span class="legend-item"><span class="legend-color s2-color"></span> Sensor 2 (Outlet)</span>
+          <span class="legend-item"><span class="legend-color diff-color"></span> Anomaly Threshold</span>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <canvas id="flowCanvas" height="180"></canvas>
+      </div>
+    </section>
+
+    <!-- Controls & Diagnostics Settings -->
+    <section class="card panel-card full-width">
+      <div class="card-header">
+        <div class="header-with-icon">
+          <span class="header-icon">⚙️</span>
+          <h3>Demonstration Settings & Hardware Diagnostics</h3>
+        </div>
+      </div>
+
+      <div class="settings-grid">
+        <div class="setting-item">
+          <label for="serverIp">ESP32 Endpoint URL</label>
+          <div class="input-inline">
+            <input type="text" id="serverIp" value="" placeholder="Auto (192.168.4.1 or origin)" />
+            <button class="btn-subtle" id="btnTestConn">Ping API</button>
+          </div>
+          <small class="helper-text">Leave blank when running directly from ESP32 AP.</small>
+        </div>
+
+        <div class="setting-item">
+          <label for="pollInterval">Polling Interval (ms)</label>
+          <select id="pollInterval">
+            <option value="500">500 ms (Fast)</option>
+            <option value="1000" selected>1000 ms (1 Second - Standard)</option>
+            <option value="2000">2000 ms (Slow)</option>
+          </select>
+          <small class="helper-text">Interval between GET /api/readings requests.</small>
+        </div>
+
+        <div class="setting-item">
+          <label for="leakThreshold">Leak Detection Threshold (L/min)</label>
+          <input type="number" id="leakThreshold" value="0.30" step="0.05" min="0.1" max="5.0" />
+          <small class="helper-text">Trigger alert if |S1 - S2| exceeds this for > 3 sec.</small>
+        </div>
+
+        <div class="setting-item">
+          <label for="waterTariff">Water Tariff Rate (₹ per 1,000 L)</label>
+          <input type="number" id="waterTariff" value="15.00" step="1.0" min="1.0" />
+          <small class="helper-text">Municipal / commercial water tariff rate.</small>
+        </div>
+
+        <div class="setting-item checkbox-item">
+          <label class="toggle-switch">
+            <input type="checkbox" id="demoModeToggle">
+            <span class="toggle-slider"></span>
+            <span class="toggle-text">Offline Demo Mode (Simulation)</span>
+          </label>
+          <small class="helper-text text-warning">
+            Strictly for testing UI when physical ESP32 is unpowered. Clearly labelled DEMO when active.
+          </small>
+        </div>
+
+        <div class="setting-item action-buttons">
+          <button class="btn-primary" id="btnApplySettings">Apply Parameters</button>
+          <button class="btn-secondary" id="btnResetVolume">Reset Session Counters</button>
+        </div>
+      </div>
+
+      <!-- Raw JSON Telemetry Inspector for College Evaluation -->
+      <details class="raw-data-fold">
+        <summary>Inspect Live API Response Contract (GET /api/readings)</summary>
+        <pre class="json-preview font-mono" id="rawJsonPreview">{"waiting": "no payload received yet"}</pre>
+      </details>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-left">
+      <strong>AquaGuard AI</strong> — College Capstone Engineering Demonstration
+    </div>
+    <div class="footer-center">
+      Hardware: ESP32 + Dual YF-S201 Hall Sensors | Signal Pins: GPIO 27 & 26
+    </div>
+    <div class="footer-right font-mono" id="firmwareInfo">
+      ESP32 AP: AquaGuard_AP | IP: 192.168.4.1
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

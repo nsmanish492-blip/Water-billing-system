@@ -1,0 +1,46 @@
+﻿# Java / Maven
+**/target/
+**/build/
+*.class
+
+# Node.js
+**/node_modules/
+**/dist/
+
+# Python
+**/__pycache__/
+**/.venv/
+**/venv/
+*.pyc
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+**/*service-account*.json
+**/*serviceAccount*.json
+**/credentials*.json
+**/*secret*
+**/*secrets*
+**/*private*.pem
+**/*.key
+**/*.jks
+**/*.keystore
+
+# Firebase local credentials
+application-local.properties
+application-secrets.properties
+
+# IDE and OS
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Gradle cache
+**/.gradle/
+.gradle/
+**/local.properties

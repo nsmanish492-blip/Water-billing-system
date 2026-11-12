@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/main :: layout('System Settings & Calibration', 'Configure Hydraulic Limits, Sensor Calibration & Operational Parameters', ~{::content}, ~{::scripts})}">
+<body>
+
+<div th:fragment="content">
+    <div class="row g-3">
+        <div class="col-lg-8 mx-auto">
+            <div class="card-guard">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-sliders text-cyan"></i> Application & Algorithm Configuration</span>
+                    <span class="badge bg-secondary font-mono">LOCAL SESSION MEMORY</span>
+                </div>
+                <div class="card-guard-body">
+                    <!-- Session Notice -->
+                    <div class="alert alert-dark border border-secondary small text-muted mb-4">
+                        <i class="bi bi-info-circle text-info me-1"></i>
+                        Settings modified here apply immediately across all dashboard views, leak rules, and billing calculations in this Spring Boot session. These settings do not sync to Firebase in this offline presentation build.
+                    </div>
+
+                    <form th:action="@{/settings/update}" th:object="${settings}" method="post">
+                        <!-- Water Tariff -->
+                        <div class="mb-4">
+                            <h6 class="text-info border-bottom border-secondary border-opacity-25 pb-2">1. Billing & Financial Parameters</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-guard-label" for="tariff">Water Tariff (₹ per 1,000 Litres)</label>
+                                    <input type="number" step="0.5" id="tariff" th:field="*{waterTariffPerKiloLitre}" class="form-control form-guard-control font-mono" required>
+                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('waterTariffPerKiloLitre')}" th:errors="*{waterTariffPerKiloLitre}"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-guard-label" for="usageHours">Expected Water Use Hours</label>
+                                    <input type="text" id="usageHours" th:field="*{expectedUsageHours}" class="form-control form-guard-control font-mono" required>
+                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('expectedUsageHours')}" th:errors="*{expectedUsageHours}"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Calibration Constants -->
+                        <div class="mb-4">
+                            <h6 class="text-info border-bottom border-secondary border-opacity-25 pb-2">2. Hardware Sensor Calibration Constants (Pulses / Litre)</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-guard-label" for="cal1">Sensor 1 (Inlet / GPIO 27)</label>
+                                    <input type="number" step="1.0" id="cal1" th:field="*{sensor1Calibration}" class="form-control form-guard-control font-mono" required>
+                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('sensor1Calibration')}" th:errors="*{sensor1Calibration}"></div>
+                                    <small class="text-muted">Nominal YF-S201: 450.0 pulses per litre.</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-guard-label" for="cal2">Sensor 2 (Outlet / GPIO 26)</label>
+                                    <input type="number" step="1.0" id="cal2" th:field="*{sensor2Calibration}" class="form-control form-guard-control font-mono" required>
+                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('sensor2Calibration')}" th:errors="*{sensor2Calibration}"></div>
+                                    <small class="text-muted">Determined via volumetric bucket calibration.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Leakage Rules -->
+                        <div class="mb-4">
+                            <h6 class="text-info border-bottom border-secondary border-opacity-25 pb-2">3. Rule-Based Anomaly Detection Thresholds</h6>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-guard-label" for="leakThreshold">Flow Differential Threshold (L/min)</label>
+                                    <input type="number" step="0.05" id="leakThreshold" th:field="*{leakThresholdLpm}" class="form-control form-guard-control font-mono" required>
+                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('leakThresholdLpm')}" th:errors="*{leakThresholdLpm}"></div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-guard-label" for="persistence">Persistence Duration (Seconds)</label>
+                                    <input type="number" step="1" id="persistence" th:field="*{persistenceDurationSec}" class="form-control form-guard-control font-mono" required>
+                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('persistenceDurationSec')}" th:errors="*{persistenceDurationSec}"></div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-guard-label" for="topology">Topology Mode</label>
+                                    <select id="topology" th:field="*{topologyMode}" class="form-select form-guard-control">
+                                        <option value="SERIES">Series (Inlet ➔ Outlet)</option>
+                                        <option value="PARALLEL">Parallel (Independent Branches)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Device & Notifications -->
+                        <div class="mb-4">
+                            <h6 class="text-info border-bottom border-secondary border-opacity-25 pb-2">4. Device Identification & Maintenance</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-guard-label" for="devName">ESP32 Device Node ID</label>
+                                    <input type="text" id="devName" th:field="*{deviceName}" class="form-control form-guard-control font-mono" required>
+                                    <div class="text-danger small mt-1" th:if="${#fields.hasErrors('deviceName')}" th:errors="*{deviceName}"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-guard-label" for="maintDate">Next Scheduled Maintenance</label>
+                                    <input type="date" id="maintDate" th:field="*{nextMaintenanceDate}" class="form-control form-guard-control font-mono" required>
+                                </div>
+                                <div class="col-12 mt-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="emailNotif" th:field="*{emailNotifications}">
+                                        <label class="form-check-label text-light small" for="emailNotif">
+                                            Enable Simulated Operator Notifications (Console Logs)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 pt-3 border-top border-secondary border-opacity-25">
+                            <a th:href="@{/dashboard}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-guard-primary">Save System Settings</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:fragment="scripts"></div>
+</body>
+</html>

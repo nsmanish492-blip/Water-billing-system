@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/main :: layout('System Dashboard', 'Overall Water Infrastructure Telemetry & Status', ~{::content}, ~{::scripts})}">
+<body>
+
+<div th:fragment="content">
+    <!-- Top KPI Cards Row -->
+    <div class="row g-3 mb-4">
+        <!-- Today's Consumption -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card-guard h-100">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-droplet-fill text-info"></i> Today's Consumption</span>
+                    <span class="badge bg-primary-subtle text-info border border-info-subtle" th:text="${billing.dailyAvailable ? 'Measured' : 'Insufficient history'}">Insufficient history</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="d-flex align-items-baseline">
+                        <span class="metric-number" th:text="${billing.dailyAvailable ? billing.dailyConsumptionLitres : 'N/A'}">N/A</span>
+                        <span class="metric-unit">Litres</span>
+                    </div>
+                    <div class="metric-sublabel">
+                        <span th:text="${billing.dailyAvailable ? 'Derived from Firebase meter history.' : 'A sample from before today is required.'}">A sample from before today is required.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Consumption -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card-guard h-100">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-calendar3 text-primary"></i> Monthly Consumption</span>
+                    <span class="badge bg-secondary" th:text="${billing.monthlyAvailable ? 'Measured' : 'Insufficient history'}">Insufficient history</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="d-flex align-items-baseline">
+                        <span class="metric-number" th:text="${billing.monthlyAvailable ? billing.monthlyConsumptionLitres : 'N/A'}">N/A</span>
+                        <span class="metric-unit">Litres</span>
+                    </div>
+                    <div class="metric-sublabel">
+                        <span th:if="${billing.monthlyAvailable}">Units: <span class="font-mono text-light" th:text="${#numbers.formatDecimal(billing.monthlyConsumptionLitres / 1000.0, 1, 2)}">0.00</span> kL</span>
+                        <span th:unless="${billing.monthlyAvailable}">Period start not in history</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Flow Rate -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card-guard h-100">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-speedometer text-cyan"></i> Current Flow Rate</span>
+                    <span class="badge bg-info-subtle text-cyan border border-cyan">Live</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="d-flex align-items-baseline">
+                        <span class="metric-number" id="live-s1-flow" th:text="${readings.size() >= 2 ? readings[0].flowRateLpm : 'Unavailable'}">Unavailable</span>
+                        <span class="metric-unit" th:if="${readings.size() >= 2}">L/min</span>
+                    </div>
+                    <div class="metric-sublabel">
+                        Outlet (S2): <span id="live-s2-flow" class="text-light" th:text="${readings.size() >= 2 ? readings[1].flowRateLpm : 'Unavailable'}">Unavailable</span><span th:if="${readings.size() >= 2}"> L/min</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estimated Water Bill -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card-guard h-100">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-cash-stack text-success"></i> Estimated Water Bill</span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">Linear Tariff</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="d-flex align-items-baseline">
+                        <span class="metric-currency">₹</span>
+                        <span class="metric-number" th:text="${billing.monthlyAvailable ? billing.monthlyCostInr : 'N/A'}">N/A</span>
+                    </div>
+                    <div class="metric-sublabel">
+                        Rate: ₹<span th:text="${billing.tariffPerKiloLitre}">15.0</span> per 1,000 L
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Overview Row -->
+    <div class="row g-3 mb-4">
+        <!-- Leakage Status Card -->
+        <div class="col-lg-4">
+            <div class="card-guard h-100">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-shield-check text-warning"></i> Leakage Status</span>
+                    <span class="badge" th:classappend="'bg-' + ${leakage.statusBadgeClass}" th:text="${leakage.statusLabel}">NORMAL FLOW</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="small text-muted">Flow Differential (Δ S1 - S2):</span>
+                            <span class="font-mono text-light fw-bold"><span id="live-diff-flow" th:text="${#numbers.formatDecimal(leakage.differentialFlowLpm, 1, 2)}">0.07</span> L/min</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="small text-muted">Alarm Threshold:</span>
+                            <span class="font-mono text-muted" th:text="${leakage.thresholdLpm + ' L/min'}">0.40 L/min</span>
+                        </div>
+                    </div>
+                    <p class="small text-muted mb-0" th:text="${leakage.explanation}">
+                        Inlet and Outlet flow rates match within calibrated tolerance limit.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Predictive Risk & Pipe Health -->
+        <div class="col-lg-4">
+            <div class="card-guard h-100">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-graph-up-arrow text-info"></i> Pipe Health & Risk</span>
+                    <span class="badge" th:classappend="${futureRisk.riskLevel.name() == 'LOW'} ? 'bg-success' : (${futureRisk.riskLevel.name() == 'MEDIUM'} ? 'bg-warning' : (${futureRisk.riskLevel.name() == 'HIGH'} ? 'bg-danger' : 'bg-secondary'))"
+                          th:text="'Risk: ' + ${futureRisk.riskLevel}">Risk: LOW</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="small text-muted">Infrastructure Status:</span>
+                        <span class="badge bg-secondary" th:text="${futureRisk.dataSufficiency}">INSUFFICIENT DATA</span>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="small text-muted">Risk Score (Heuristic):</span>
+                        <span class="font-mono fw-bold text-light" th:text="${futureRisk.riskScore + ' / 100'}">15 / 100</span>
+                    </div>
+                    <p class="small text-muted mb-0" th:text="${futureRisk.primaryReason}">
+                        Differential readings remain strictly within calibrated tolerance margin.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Device & Connection Health -->
+        <div class="col-lg-4">
+            <div class="card-guard h-100">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-hdd-network text-primary"></i> Device Diagnostics</span>
+                      <span id="dashboard-hardware-status" class="badge bg-danger"
+                          th:class="${systemStatus.hardwareConnected ? 'badge bg-success' : 'badge bg-danger'}"
+                          th:text="${systemStatus.hardwareConnected ? 'HARDWARE CONNECTED' : 'HARDWARE NOT CONNECTED'}">HARDWARE NOT CONNECTED</span>
+                </div>
+                <div class="card-guard-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="small text-muted">Intended Board:</span>
+                        <span class="font-mono text-light" th:text="${systemStatus.esp32DeviceName}">ESP32 Dev Board</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="small text-muted">Sensors:</span>
+                        <span class="font-mono text-light">Dual YF-S201 (GPIO 27/26)</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="small text-muted">Firebase:</span>
+                        <span id="dashboard-firebase-status" class="badge bg-secondary font-mono" th:text="${systemStatus.firebaseStatus}">STATUS UNKNOWN</span>
+                    </div>
+                    <p id="dashboard-system-diagnostic" class="small text-muted mb-0" th:text="${systemStatus.diagnosticMessage}">Hardware telemetry status.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-3 mb-4">
+        <!-- Daily Water Usage Chart -->
+        <div class="col-lg-8">
+            <div class="card-guard">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-bar-chart-fill text-info"></i> Daily Water Consumption Profile (Litres)</span>
+                    <span class="badge bg-dark border border-secondary" th:text="${dailyUsage.isEmpty() ? 'No telemetry history' : 'Firebase telemetry history'}">No telemetry history</span>
+                </div>
+                <div class="card-guard-body">
+                    <div style="height: 280px;">
+                        <canvas id="dailyUsageChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sensor Comparison Chart -->
+        <div class="col-lg-4">
+            <div class="card-guard">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-pie-chart-fill text-cyan"></i> Sensor Volume Share</span>
+                    <span class="badge bg-dark border border-secondary" th:text="${readings.size() >= 2 ? 'Latest sensor totals' : 'No sensor totals'}">No sensor totals</span>
+                </div>
+                <div class="card-guard-body">
+                    <div style="height: 280px;">
+                        <canvas id="sensorComparisonChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Alerts Table Row -->
+    <div class="row g-3">
+        <div class="col-12">
+            <div class="card-guard">
+                <div class="card-guard-header">
+                    <span class="card-guard-title"><i class="bi bi-bell-fill text-warning"></i> Recent System Alerts</span>
+                    <a th:href="@{/alerts}" class="btn-guard-outline btn-sm text-decoration-none">View All Alerts</a>
+                </div>
+                <div class="card-guard-body p-0">
+                    <div class="table-responsive">
+                        <table class="table-guard">
+                            <thead>
+                            <tr>
+                                <th>Severity</th>
+                                <th>Alert ID</th>
+                                <th>Title & Description</th>
+                                <th>Category</th>
+                                <th>Timestamp</th>
+                                <th>Status</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="alert : ${recentAlerts}">
+                                <td>
+                                    <span class="badge" th:classappend="${alert.severity.name() == 'DANGER'} ? 'bg-danger' : (${alert.severity.name() == 'WARNING'} ? 'bg-warning' : 'bg-info')"
+                                          th:text="${alert.severity}">WARNING</span>
+                                </td>
+                                <td class="font-mono text-muted" th:text="${alert.id}">ALT-101</td>
+                                <td>
+                                    <strong class="text-light" th:text="${alert.title}">Differential Flow Anomaly</strong>
+                                    <div class="small text-muted" th:text="${alert.description}">Sensor 1 detected 4.8 L/min...</div>
+                                </td>
+                                <td><span class="badge bg-dark border border-secondary" th:text="${alert.category}">LEAKAGE</span></td>
+                                <td class="small text-muted font-mono" th:text="${alert.timestamp}">Today, 09:15 AM</td>
+                                <td>
+                                    <span th:if="${alert.acknowledged}" class="badge bg-success-subtle text-success border border-success-subtle">Acknowledged</span>
+                                    <span th:unless="${alert.acknowledged}" class="badge bg-warning-subtle text-warning border border-warning-subtle">Active / Unacknowledged</span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:fragment="scripts">
+<script th:inline="javascript">
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Daily Usage Bar Chart
+    const ctxDaily = document.getElementById('dailyUsageChart');
+    if (ctxDaily) {
+        window.dashboardDailyUsageChart = new Chart(ctxDaily, {
+            type: 'bar',
+            data: {
+                labels: /*[[${dailyUsage.![label]}]]*/ [],
+                datasets: [{
+                    label: 'Water Consumption (L)',
+                    data: /*[[${dailyUsage.![consumptionLitres]}]]*/ [],
+                    backgroundColor: 'rgba(6, 182, 212, 0.65)',
+                    borderColor: '#06B6D4',
+                    borderWidth: 1.5,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: '#94A3B8' } }
+                },
+                scales: {
+                    x: { ticks: { color: '#94A3B8' }, grid: { color: 'rgba(56, 189, 248, 0.08)' } },
+                    y: { ticks: { color: '#94A3B8' }, grid: { color: 'rgba(56, 189, 248, 0.08)' } }
+                }
+            }
+        });
+    }
+
+    // 2. Sensor Share Doughnut Chart
+    const ctxShare = document.getElementById('sensorComparisonChart');
+    if (ctxShare) {
+        window.dashboardSensorShareChart = new Chart(ctxShare, {
+            type: 'doughnut',
+            data: {
+                labels: ['Sensor 1 (Inlet)', 'Sensor 2 (Outlet)'],
+                datasets: [{
+                    data: /*[[${readings.![totalLitres]}]]*/ [],
+                    backgroundColor: ['#0284C7', '#06B6D4'],
+                    borderColor: '#162447',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#94A3B8' } }
+                }
+            }
+        });
+    }
+});
+</script>
+</div>
+</body>
+</html>
